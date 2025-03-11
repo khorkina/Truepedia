@@ -6,6 +6,9 @@ from wiki_utils import (
     get_article_in_language,
     translate_text,
     get_language_name,
+    get_native_language_name,
+    split_content_into_sections,
+    display_collapsible_sections,
     LANGUAGE_DICT
 )
 
@@ -108,19 +111,19 @@ with st.sidebar:
                 st.session_state.current_language = search_lang
                 st.session_state.show_translation = False
     
-    # Show search results if available
+    # Show search results if available in a collapsible expander
     if st.session_state.search_results:
-        st.subheader("Search Results")
-        for idx, result in enumerate(st.session_state.search_results):
-            if st.button(f"{result}", key=f"result_{idx}"):
-                with st.spinner(f"Loading article: {result}..."):
-                    st.session_state.current_article = get_article_content(result, st.session_state.current_language)
-                    if st.session_state.current_article:
-                        st.session_state.available_languages = get_available_languages(
-                            result, 
-                            st.session_state.current_language
-                        )
-                        st.session_state.show_translation = False
+        with st.expander("Search Results", expanded=True):
+            for idx, result in enumerate(st.session_state.search_results):
+                if st.button(f"{result}", key=f"result_{idx}"):
+                    with st.spinner(f"Loading article: {result}..."):
+                        st.session_state.current_article = get_article_content(result, st.session_state.current_language)
+                        if st.session_state.current_article:
+                            st.session_state.available_languages = get_available_languages(
+                                result, 
+                                st.session_state.current_language
+                            )
+                            st.session_state.show_translation = False
     
     # Translation settings
     if st.session_state.current_article:
@@ -152,31 +155,48 @@ if st.session_state.current_article:
     # Display Wikipedia link
     st.markdown(f'<a href="{article["url"]}" target="_blank" class="wiki-link">📖 View on Wikipedia</a>', unsafe_allow_html=True)
     
-    # Display language options
-    st.subheader("Available Languages")
-    
-    # Create columns for language buttons
-    cols = st.columns(4)
-    
-    # Sort languages by name for better organization
-    sorted_langs = sorted(
-        st.session_state.available_languages.items(), 
-        key=lambda x: get_language_name(x[0])
-    )
-    
-    for idx, (lang_code, lang_title) in enumerate(sorted_langs):
-        col_idx = idx % 4
-        with cols[col_idx]:
-            if st.button(
-                f"{get_language_name(lang_code)} ({lang_code})",
-                key=f"lang_{lang_code}",
-                use_container_width=True
-            ):
-                with st.spinner(f"Loading article in {get_language_name(lang_code)}..."):
-                    st.session_state.current_article = get_article_in_language(lang_title, lang_code)
-                    st.session_state.current_language = lang_code
-                    st.session_state.show_translation = False
-                    st.rerun()
+    # Display language options in an organized dropdown
+    with st.expander("Available Languages", expanded=True):
+        # Group languages by region/script for better organization
+        st.write("Select a language to view this article in:")
+        
+        # Create a selectbox with native language names
+        # Get the list of available languages with their native names
+        language_options = []
+        for lang_code, lang_title in st.session_state.available_languages.items():
+            native_name = get_native_language_name(lang_code)
+            display_name = f"{native_name} - {get_language_name(lang_code)} ({lang_code})"
+            language_options.append((lang_code, lang_title, display_name))
+        
+        # Sort by display name
+        language_options.sort(key=lambda x: x[2])
+        
+        # Create the dropdown
+        if 'selected_language' not in st.session_state:
+            st.session_state.selected_language = st.session_state.current_language
+            
+        selected_lang_index = 0
+        for i, (code, _, _) in enumerate(language_options):
+            if code == st.session_state.current_language:
+                selected_lang_index = i
+                break
+                
+        selected_option = st.selectbox(
+            "Choose Language",
+            options=range(len(language_options)),
+            format_func=lambda i: language_options[i][2],
+            index=selected_lang_index,
+            key="language_selector"
+        )
+        
+        # Button to load the selected language
+        if st.button("View in Selected Language", use_container_width=True):
+            lang_code, lang_title, _ = language_options[selected_option]
+            with st.spinner(f"Loading article in {get_language_name(lang_code)}..."):
+                st.session_state.current_article = get_article_in_language(lang_title, lang_code)
+                st.session_state.current_language = lang_code
+                st.session_state.show_translation = False
+                st.rerun()
     
     # Create tabs for summary and full content
     summary_tab, content_tab = st.tabs(["Summary", "Full Content"])
@@ -195,7 +215,7 @@ if st.session_state.current_article:
             st.markdown(f'<div class="article-summary">{article["summary"]}</div>', unsafe_allow_html=True)
     
     with content_tab:
-        # If translation is requested, show translated content
+        # Make article content collapsible in sections
         if st.session_state.show_translation and st.session_state.translate_to != st.session_state.current_language:
             with st.spinner(f"Translating content to {get_language_name(st.session_state.translate_to)}..."):
                 # Only translate a portion of the content to avoid rate limits
@@ -205,11 +225,17 @@ if st.session_state.current_article:
                     st.session_state.translate_to,
                     st.session_state.current_language
                 )
-                st.markdown(f'<div class="article-content">{translated_content}</div>', unsafe_allow_html=True)
+                
+                # Split content into sections for collapsible viewing
+                sections = split_content_into_sections(translated_content)
+                display_collapsible_sections(sections)
+                
                 if len(article["content"]) > 3000:
                     st.info("Only a portion of the content has been translated due to length limitations.")
         else:
-            st.markdown(f'<div class="article-content">{article["content"]}</div>', unsafe_allow_html=True)
+            # Split content into sections for collapsible viewing
+            sections = split_content_into_sections(article["content"])
+            display_collapsible_sections(sections)
 else:
     # Welcome message when no article is selected
     st.info("👈 Search for a Wikipedia article in any language to get started!")

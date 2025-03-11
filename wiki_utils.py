@@ -190,6 +190,39 @@ LANGUAGE_DICT = {
     'th': 'Thai'
 }
 
+# Dictionary mapping language codes to native language names
+NATIVE_LANGUAGE_DICT = {
+    'en': 'English',
+    'es': 'Español',
+    'fr': 'Français',
+    'de': 'Deutsch',
+    'it': 'Italiano',
+    'pt': 'Português',
+    'ru': 'Русский',
+    'ja': '日本語',
+    'zh': '中文',
+    'ar': 'العربية',
+    'hi': 'हिन्दी',
+    'ko': '한국어',
+    'nl': 'Nederlands',
+    'sv': 'Svenska',
+    'fi': 'Suomi',
+    'no': 'Norsk',
+    'da': 'Dansk',
+    'pl': 'Polski',
+    'uk': 'Українська',
+    'el': 'Ελληνικά',
+    'he': 'עברית',
+    'id': 'Bahasa Indonesia',
+    'vi': 'Tiếng Việt',
+    'fa': 'فارسی',
+    'tr': 'Türkçe',
+    'cs': 'Čeština',
+    'hu': 'Magyar',
+    'ro': 'Română',
+    'th': 'ไทย'
+}
+
 def get_language_name(lang_code):
     """
     Get the full language name from a language code
@@ -201,3 +234,72 @@ def get_language_name(lang_code):
         str: Full language name
     """
     return LANGUAGE_DICT.get(lang_code, lang_code)
+
+def get_native_language_name(lang_code):
+    """
+    Get the native language name from a language code
+    
+    Args:
+        lang_code (str): Language code (e.g., 'en', 'es')
+        
+    Returns:
+        str: Native language name
+    """
+    return NATIVE_LANGUAGE_DICT.get(lang_code, lang_code)
+
+def split_content_into_sections(content):
+    """
+    Split article content into sections for collapsible viewing
+    
+    Args:
+        content (str): Article content text
+        
+    Returns:
+        list: List of dictionaries with section titles and content
+    """
+    if not content:
+        return []
+    
+    # Simple section detection by looking for lines that might be headers
+    lines = content.split('\n')
+    sections = []
+    current_section = {"title": "Introduction", "content": ""}
+    
+    for line in lines:
+        # Check if line looks like a section header (not perfect but works for basic cases)
+        if line.strip() and len(line.strip()) < 100 and not line.strip().endswith('.'):
+            # If we've accumulated content in the current section, add it to sections
+            if current_section["content"].strip():
+                sections.append(current_section)
+            
+            # Start a new section
+            current_section = {
+                "title": line.strip(),
+                "content": ""
+            }
+        else:
+            # Add line to current section
+            current_section["content"] += line + "\n"
+    
+    # Add the last section if it has content
+    if current_section["content"].strip():
+        sections.append(current_section)
+    
+    return sections
+
+def display_collapsible_sections(sections):
+    """
+    Display content sections in collapsible expanders
+    
+    Args:
+        sections (list): List of dictionaries with section titles and content
+    """
+    if not sections:
+        st.write("No content available")
+        return
+    
+    # Display each section in an expander
+    for i, section in enumerate(sections):
+        # First section expanded by default, others collapsed
+        with st.expander(section["title"], expanded=(i == 0)):
+            st.markdown(section["content"])
