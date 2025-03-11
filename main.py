@@ -12,6 +12,8 @@ from wiki_utils import (
     LANGUAGE_DICT
 )
 
+
+
 # Page configuration
 st.set_page_config(
     page_title="TruePedia - Multilingual Wikipedia Search",
