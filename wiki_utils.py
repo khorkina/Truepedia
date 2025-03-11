@@ -45,8 +45,12 @@ def get_article_content(title, language="en"):
         return None
     
     try:
-        # Initialize Wikipedia API with the specified language
-        wiki_wiki = wikipediaapi.Wikipedia(language)
+        # Initialize Wikipedia API with the specified language and a proper user agent
+        user_agent = "TruePedia/1.0 (https://replit.com/; truepedia@example.com) python-wikipediaapi"
+        wiki_wiki = wikipediaapi.Wikipedia(
+            user_agent=user_agent,
+            language=language
+        )
         # Get the page
         page = wiki_wiki.page(title)
         
@@ -79,8 +83,12 @@ def get_available_languages(title, source_lang="en"):
         return {}
     
     try:
-        # Initialize Wikipedia API
-        wiki_wiki = wikipediaapi.Wikipedia(source_lang)
+        # Initialize Wikipedia API with proper user agent
+        user_agent = "TruePedia/1.0 (https://replit.com/; truepedia@example.com) python-wikipediaapi"
+        wiki_wiki = wikipediaapi.Wikipedia(
+            user_agent=user_agent,
+            language=source_lang
+        )
         # Get the page
         page = wiki_wiki.page(title)
         
