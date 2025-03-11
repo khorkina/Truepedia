@@ -176,7 +176,7 @@ if st.session_state.current_article:
                     st.session_state.current_article = get_article_in_language(lang_title, lang_code)
                     st.session_state.current_language = lang_code
                     st.session_state.show_translation = False
-                    st.experimental_rerun()
+                    st.rerun()
     
     # Create tabs for summary and full content
     summary_tab, content_tab = st.tabs(["Summary", "Full Content"])
